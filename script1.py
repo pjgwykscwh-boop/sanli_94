@@ -224,15 +224,7 @@ def choose_it(driver, sit_avilable, idx, reading_room, day_type, max_attempts=50
                         (By.XPATH, '//div[contains(@class, "seat-name") and text()="{}"]'.format(sit_avilable))
                     )
                 )
-                if sit_elem==None:
-                    driver.refresh()
-                    timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    screenshot_path = f"screenshots/screenshot_unsuccess_{timestamp}.png"
-                    os.makedirs("screenshots", exist_ok=True)
-                    driver.save_screenshot(screenshot_path)
-                    return True
-                else:
-                    sit_elem.click()
+                sit_elem.click()
             except Exception as e:
                 print("点击座位失败:", e)
         try:
@@ -508,7 +500,7 @@ def date_whether(seat_dict, driver):
     found_full_day = False
     found_half_day = False
     # print(seat_dict)
-    random.seed(int("42436470"))
+    random.seed(int("4032430180"))
     shuffled_keys = list(seat_dict.keys())
     random.shuffle(shuffled_keys)
     # 定义需要检查的时间段
@@ -623,14 +615,51 @@ def prefer_whether(account, password, prefer_sit, reading_room, options):
     full_day_times = ["08:00","09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
                       "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"]
     driver = idtf_imf(account, password, options)
-    # 切换崇山校区
-    element = driver.find_element(By.CSS_SELECTOR, ".el-select__caret.el-input__icon.el-icon-arrow-up")
-    element.click()
-    wait = WebDriverWait(driver, 10)
-    # 等待包含目标文本的 <span> 出现并点击
-    target_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//li/span[text()='崇山校区图书馆']")))
-    target_option.click()
-    time.sleep(2)
+    try:
+        # 等待下拉框元素完全加载并且可以交互
+        wait = WebDriverWait(driver, 20)
+        element = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, ".el-select__caret.el-input__icon.el-icon-arrow-up"))
+        )
+        
+        # 使用 JavaScript 执行点击，避免可能的遮挡问题
+        driver.execute_script("arguments[0].click();", element)
+        
+        # 确保下拉选项完全展开
+        time.sleep(1)
+        
+        # 等待目标选项出现并确保可以点击
+        target_option = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//li/span[text()='崇山校区图书馆']"))
+        )
+        
+        # 使用 JavaScript 执行点击
+        driver.execute_script("arguments[0].click();", target_option)
+        
+        # 等待页面响应
+        time.sleep(2)
+        
+    except Exception as e:
+        print(f"选择校区时发生错误: {str(e)}")
+        # 如果出错，尝试刷新页面重试
+        driver.refresh()
+        time.sleep(2)
+        try:
+            # 重试一次
+            element = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, ".el-select__caret.el-input__icon.el-icon-arrow-up"))
+            )
+            driver.execute_script("arguments[0].click();", element)
+            time.sleep(1)
+            target_option = wait.until(
+                EC.element_to_be_clickable((By.XPATH, "//li/span[text()='崇山校区图书馆']"))
+            )
+            driver.execute_script("arguments[0].click();", target_option)
+            time.sleep(2)
+        except Exception as retry_error:
+            print(f"重试选择校区失败: {str(retry_error)}")
+            driver.quit()
+            return None, None, None
     # 确认自习室
     room_xpath = f'//*[contains(@class, "room-name") and contains(text(), "{reading_room}")]'
     element = WebDriverWait(driver, 10).until(
@@ -847,11 +876,11 @@ import shutil
 def main():
     """主函数：循环登录多个账号并执行操作"""
     account_password4 = {
-        "42436470": "000000",
-        "42436470": "000000"
+        "4032430180": "Holmes221B",
+        "4032430180": "Holmes221B"
     }
     sit_avilable, day_type = None, None
-    users = {"自定义": [account_password4, "三楼理科书库", "4"]}
+    users = {"自定义": [account_password4, "三楼理科书库", "94"]}
     user = "自定义"
     total_accounts = list(users[user][0].items())
     reading_room = users[user][1]
